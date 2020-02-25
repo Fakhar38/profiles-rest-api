@@ -2,11 +2,13 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets
-from rest_framework import filters
+from rest_framework import filters, permissions
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.settings import api_settings
 from rest_framework.authentication import TokenAuthentication
-from .serializers import HelloSerializer, UserProfileSerializer
+from .serializers import HelloSerializer, UserProfileSerializer, CustomAuthTokenSerializer
 from .models import UserProfile
-from . import permissions
+from .permissions import UpdateOwnProfile
 
 
 class HelloApiView(APIView):
@@ -111,6 +113,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     queryset = UserProfile.objects.all()
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (permissions.UpdateOwnProfile,)
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly, UpdateOwnProfile)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name', 'email',)
+
+
+class UserLoginApiView(ObtainAuthToken):
+    """Handle the user authentication in our system"""
+    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+    serializer_class = CustomAuthTokenSerializer
