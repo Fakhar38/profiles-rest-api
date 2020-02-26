@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, update_session_auth_hash
 from rest_framework import serializers
 from django.utils.translation import gettext as _
 from .models import UserProfile
@@ -23,12 +23,32 @@ class UserProfileSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
+        """
+        Creates a new user profile in the system
+        """
+
         user = UserProfile.objects.create_user(
             email=validated_data['email'],
             name=validated_data['name'],
             password=validated_data['password']
         )
+        print(user.password)
         return user
+
+    def update(self, instance, validated_date):
+        """
+        Handles the update and partial update function of the viewset, Hashes the password correctly if that's
+        the case
+        """
+        for attr, value in validated_date.items():
+            if attr == 'password':
+                instance.set_password(value)
+            else:
+                setattr(instance, attr, value)
+
+        instance.save()
+        update_session_auth_hash(self.context.get('request'), instance)
+        return instance
 
 
 class CustomAuthTokenSerializer(serializers.Serializer):
